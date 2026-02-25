@@ -195,10 +195,8 @@
 
     let currentQ, typedIndex, score, timeLeft, gameActive;
     let penguinPos = 10;
+    let currentSpeed = 0; // その問題のペンギンの速度
     let audioCtx = null;
-    
-    // --- 【変更点】基本速度の設定 ---
-    let baseSpeed = 0.15; 
 
     // --- 音声エンジンの初期化 ---
     function initAudio() {
@@ -236,7 +234,15 @@
     function nextQuestion() {
         currentQ = questions[Math.floor(Math.random() * questions.length)];
         typedIndex = 0;
-        penguinPos = 10; // ペンギンを左に戻す
+        penguinPos = 10; 
+        
+        // --- 【新ロジック】速度の計算 ---
+        // 1秒間に2文字打つペース(2KPS)を想定
+        // 猶予時間(s) = 文字数 / 2
+        // 移動距離(75%) を 猶予時間 で割って、さらに秒間60フレーム(FPS)で割る
+        const timeLimit = currentQ.cmd.length / 2; 
+        currentSpeed = 75 / timeLimit / 60; 
+        
         updateDisplay();
     }
 
@@ -251,26 +257,24 @@
         document.getElementById('target-desc').innerText = currentQ.desc;
     }
 
-    // --- 【変更点】gameLoop のロジックを更新 ---
     function gameLoop() {
         if (!gameActive) return;
 
-        // ペンギンが一定速度で右へ進む
-        penguinPos += baseSpeed;
+        // 計算された速度で移動
+        penguinPos += currentSpeed;
         document.getElementById('penguin').style.left = penguinPos + "%";
 
         // 穴に落ちた！
         if (penguinPos > 85) {
-            playSound(150, 'sawtooth', 0.3); // 落下音
+            playSound(150, 'sawtooth', 0.3);
             penguinPos = 10;
             score = Math.max(0, score - 50);
-            nextQuestion();
+            nextQuestion(); // 自動的に次の問題へ
         }
 
         requestAnimationFrame(gameLoop);
     }
 
-    // --- 【変更点】keydown 内で「押し戻す」処理を追加 ---
     window.addEventListener('keydown', (e) => {
         if (!gameActive) {
             if (e.key === 'Enter') startGame();
@@ -281,28 +285,28 @@
 
         if (e.key === currentQ.cmd[typedIndex]) {
             typedIndex++;
+            playSound(600, 'sine', 0.05); 
             
-            // 正解するごとに、文字数に応じてペンギンを左に押し戻す
-            const pushBackAmount = 75 / currentQ.cmd.length; 
-            penguinPos = Math.max(10, penguinPos - pushBackAmount);
-            
-            playSound(600, 'sine', 0.05); // 打鍵音
             if (typedIndex >= currentQ.cmd.length) {
                 score += 100;
-                playSound(1000, 'sine', 0.1); // クリア音
+                playSound(1000, 'sine', 0.1); 
                 
-                // ペンギンがジャンプする演出
+                // ジャンプ演出
                 const p = document.getElementById('penguin');
                 p.style.transform = 'translateY(-50px) rotate(360deg)';
+                
+                // 少しだけ待ってから次の問題へ（リセット）
+                gameActive = false; // アニメーション中にペンギンが動かないように一時停止
                 setTimeout(() => {
                     p.style.transform = 'translateY(0) rotate(0)';
+                    gameActive = true;
                     nextQuestion();
                 }, 200);
             } else {
                 updateDisplay();
             }
         } else {
-            playSound(200, 'square', 0.1); // ミス音
+            playSound(200, 'square', 0.1); 
             document.body.classList.add('miss-flash');
             setTimeout(() => document.body.classList.remove('miss-flash'), 100);
         }
@@ -316,4 +320,5 @@
 </script>
 </body>
 </html>
+
 

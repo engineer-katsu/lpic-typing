@@ -3,36 +3,40 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>LPIC Penguin Race</title>
+    <title>LPIC Penguin Race - 101/102 Edition</title>
     <style>
         :root {
             --bg-dark: #0d1117;
             --ice-blue: #a5f3fc;
             --term-green: #00ff41;
             --text-white: #ffffff;
+            --error-red: #ff5f56;
         }
 
         body {
             background-color: var(--bg-dark);
             color: var(--text-white);
-            font-family: 'Courier New', monospace;
+            font-family: 'Consolas', 'Courier New', monospace;
             margin: 0;
             display: flex;
             flex-direction: column;
             align-items: center;
             height: 100vh;
+            overflow: hidden;
         }
 
         /* ヘッダー情報 */
         #hud {
-            width: 90%;
+            width: 100%;
+            max-width: 900px;
             display: flex;
             justify-content: space-between;
             padding: 20px;
             font-size: 1.5rem;
+            box-sizing: border-box;
         }
 
-        /* メイン表示エリア（中央固定） */
+        /* メインタイピングエリア */
         #display-area {
             flex: 1;
             display: flex;
@@ -40,116 +44,126 @@
             justify-content: center;
             align-items: center;
             width: 100%;
-            text-align: center;
+            padding: 20px;
         }
 
         #target-desc {
-            font-size: 1.2rem;
-            color: #aaa;
-            margin-bottom: 10px;
+            font-size: 1.4rem;
+            color: #bdc3c7;
+            margin-bottom: 15px;
+            min-height: 1.4em;
         }
 
         #target-text {
-            font-size: 3.5rem;
-            letter-spacing: 0.1em;
-            background: rgba(255,255,255,0.05);
-            padding: 20px 40px;
+            font-size: 3.2rem;
+            letter-spacing: 0.05em;
+            background: rgba(255, 255, 255, 0.05);
+            padding: 30px 50px;
             border-radius: 15px;
+            border: 2px solid #333;
+            word-break: break-all;
+            max-width: 90%;
         }
 
         .correct { color: var(--term-green); }
-        .next { border-bottom: 3px solid var(--term-green); }
+        .current-char { background-color: rgba(0, 255, 65, 0.3); border-bottom: 4px solid var(--term-green); }
+        .miss { background-color: var(--error-red); color: white; }
 
-        /* ペンギンの走行エリア（下部） */
+        /* 走行エリア（トラック） */
         #track-container {
             width: 100%;
-            height: 150px;
-            background: linear-gradient(to bottom, #0074d9, var(--ice-blue));
+            height: 180px;
+            background: linear-gradient(to bottom, #1a365d 0%, #2b6cb0 50%, var(--ice-blue) 100%);
             position: relative;
             border-top: 4px solid #fff;
         }
 
+        #ice-ground {
+            position: absolute;
+            bottom: 0;
+            width: 100%;
+            height: 40px;
+            background: #fff;
+            opacity: 0.8;
+        }
+
         #penguin {
             position: absolute;
-            bottom: 20px;
-            left: 0%; /* ここがタイピングで増える */
-            font-size: 4rem;
-            transition: left 0.2s ease-out;
+            bottom: 25px;
+            left: 5%;
+            font-size: 4.5rem;
+            transition: left 0.15s cubic-bezier(0.175, 0.885, 0.32, 1.275);
             z-index: 10;
+            filter: drop-shadow(2px 2px 2px rgba(0,0,0,0.3));
         }
 
         #goal-flag {
             position: absolute;
-            right: 20px;
-            bottom: 20px;
-            font-size: 3rem;
+            right: 30px;
+            bottom: 30px;
+            font-size: 3.5rem;
         }
 
-        /* 結果画面 */
-        #result-screen {
-            display: none;
+        /* 画面レイヤー */
+        .overlay {
             position: fixed;
             inset: 0;
-            background: rgba(0,0,0,0.95);
+            background: rgba(0, 0, 0, 0.9);
+            display: flex;
             flex-direction: column;
             justify-content: center;
             align-items: center;
             z-index: 100;
         }
 
-        #start-screen {
-            position: fixed;
-            inset: 0;
-            background: var(--bg-dark);
-            display: flex;
-            flex-direction: column;
-            justify-content: center;
-            align-items: center;
-            z-index: 101;
-        }
-
         button {
-            padding: 15px 40px;
-            font-size: 1.5rem;
+            padding: 15px 50px;
+            font-size: 1.8rem;
             background: var(--term-green);
+            color: #000;
             border: none;
             cursor: pointer;
-            border-radius: 30px;
+            border-radius: 50px;
             font-weight: bold;
+            transition: transform 0.2s;
         }
+
+        button:hover { transform: scale(1.1); }
     </style>
 </head>
 <body>
 
-<div id="start-screen">
-    <h1 style="font-size: 3rem; color: var(--term-green);">LPIC PENGUIN RACE</h1>
-    <p>コマンドを正しく打ってペンギンをゴールへ導け！</p>
+<div id="start-screen" class="overlay">
+    <h1 style="font-size: 3.5rem; color: var(--term-green); margin-bottom: 10px;">🐧 LPIC PENGUIN RACE</h1>
+    <p style="font-size: 1.2rem; margin-bottom: 30px;">コマンドを正確に打って、ペンギンをゴールへ導け！</p>
     <button onclick="startGame()">レース開始 (Enter)</button>
+    <p style="margin-top: 20px; color: #666;">※半角英数字で入力してください</p>
 </div>
 
 <div id="hud">
-    <div>Time: <span id="timer">60</span>s</div>
-    <div>Score: <span id="score">0</span></div>
+    <div>TIME: <span id="timer">60</span>s</div>
+    <div>SCORE: <span id="score">0</span></div>
 </div>
 
 <div id="display-area">
-    <div id="target-desc">コマンドの説明がここに出ます</div>
-    <div id="target-text">PRESS START</div>
+    <div id="target-desc">読み込み中...</div>
+    <div id="target-text">READY?</div>
 </div>
 
 <div id="track-container">
     <div id="penguin">🐧</div>
     <div id="goal-flag">🏁</div>
+    <div id="ice-ground"></div>
 </div>
 
-<div id="result-screen">
+<div id="result-screen" class="overlay" style="display: none;">
     <h2 style="font-size: 3rem;">FINISH!</h2>
-    <p id="final-stats" style="font-size: 1.5rem;"></p>
-    <button onclick="location.reload()">再挑戦</button>
+    <div id="final-stats" style="font-size: 1.5rem; text-align: center; margin: 20px 0;"></div>
+    <button onclick="location.reload()">もう一度挑戦 (Enter)</button>
 </div>
 
 <script>
-const questions = [
+    const questions = [
         // --- 101: システムアーキテクチャ・ファイル管理 ---
         { cmd: "ls -la", desc: "隠しファイルを含む全ファイルの詳細を表示" },
         { cmd: "ls -ltr", desc: "更新日時が古い順に表示（実務でログ確認に多用）" },
@@ -230,6 +244,7 @@ const questions = [
     let timeLeft = 60;
     let gameActive = false;
     let totalCharsTyped = 0;
+    let missCount = 0;
 
     const targetTextElem = document.getElementById('target-text');
     const targetDescElem = document.getElementById('target-desc');
@@ -240,9 +255,17 @@ const questions = [
     function startGame() {
         document.getElementById('start-screen').style.display = 'none';
         gameActive = true;
+        score = 0;
+        timeLeft = 60;
+        totalCharsTyped = 0;
+        missCount = 0;
         nextQuestion();
         
         const timerId = setInterval(() => {
+            if (!gameActive) {
+                clearInterval(timerId);
+                return;
+            }
             timeLeft--;
             timerElem.innerText = timeLeft;
             if (timeLeft <= 0) {
@@ -253,11 +276,10 @@ const questions = [
     }
 
     function nextQuestion() {
+        // ランダムに問題を選択
         currentQ = questions[Math.floor(Math.random() * questions.length)];
         typedIndex = 0;
         updateDisplay();
-        // 問題が変わるたびにペンギンの位置を少し戻すか、そのまま進めるかはお好み
-        // 今回は「全体の進捗」として、ペンギンが右端にいくまでを1つの目標にします
     }
 
     function updateDisplay() {
@@ -266,7 +288,7 @@ const questions = [
             if (i < typedIndex) {
                 html += `<span class="correct">${currentQ.cmd[i]}</span>`;
             } else if (i === typedIndex) {
-                html += `<span class="next">${currentQ.cmd[i]}</span>`;
+                html += `<span class="current-char">${currentQ.cmd[i]}</span>`;
             } else {
                 html += `<span>${currentQ.cmd[i]}</span>`;
             }
@@ -277,9 +299,18 @@ const questions = [
 
     window.addEventListener('keydown', (e) => {
         if (!gameActive) {
-            if (e.key === 'Enter') startGame();
+            if (e.key === 'Enter') {
+                if(document.getElementById('result-screen').style.display === 'flex') {
+                    location.reload();
+                } else {
+                    startGame();
+                }
+            }
             return;
         }
+
+        // シフトキーなどは無視
+        if (e.key.length > 1) return;
 
         // キー判定
         if (e.key === currentQ.cmd[typedIndex]) {
@@ -287,24 +318,44 @@ const questions = [
             totalCharsTyped++;
             score += 10;
             
-            // ペンギンを右に動かす (最大90%まで)
-            let progress = (totalCharsTyped % 50) * 2; // 50文字打つごとに端まで行く設定
-            penguinElem.style.left = progress + "%";
+            // ペンギンの進捗計算（0%〜85%の間で動かす）
+            // 150文字程度でゴールまで行くような計算
+            let progress = Math.min(85, (totalCharsTyped / 150) * 85);
+            penguinElem.style.left = (5 + progress) + "%";
             
             if (typedIndex >= currentQ.cmd.length) {
-                score += 50; // ボーナス
+                score += 100; // 文章クリアボーナス
                 nextQuestion();
             } else {
                 updateDisplay();
             }
-            scoreElem.innerText = score;
+        } else {
+            // ミス入力時の演出
+            missCount++;
+            targetTextElem.classList.add('miss');
+            setTimeout(() => targetTextElem.classList.remove('miss'), 100);
         }
+        scoreElem.innerText = score;
     });
 
     function endGame() {
         gameActive = false;
         document.getElementById('result-screen').style.display = 'flex';
-        document.getElementById('final-stats').innerText = `最終スコア: ${score}点 / 打鍵数: ${totalCharsTyped}`;
+        
+        // 称号の判定
+        let rank = "LPIC 初学者級";
+        if (score > 3000) rank = "スーパー root ユーザー級";
+        else if (score > 2000) rank = "LPI認定エンジニア級";
+        else if (score > 1000) rank = "一般ユーザー級";
+
+        const accuracy = Math.floor((totalCharsTyped / (totalCharsTyped + missCount)) * 100) || 0;
+        
+        document.getElementById('final-stats').innerHTML = `
+            スコア: <span style="color:var(--term-green); font-size: 2.5rem;">${score}</span> 点<br>
+            打鍵数: ${totalCharsTyped} 回 / ミス: ${missCount} 回<br>
+            正確性: ${accuracy} %<br><br>
+            称号: <strong>${rank}</strong>
+        `;
     }
 </script>
 </body>

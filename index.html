@@ -24,20 +24,44 @@
         #sky { flex: 2; position: relative; background: linear-gradient(to bottom, #2980b9, #6dd5fa); overflow: hidden; }
         #typing-area { flex: 3; display: flex; flex-direction: column; justify-content: center; align-items: center; z-index: 10; }
         
-        /* 地面エリアの親（ここにはclip-pathをかけない） */
-        #ground-container {
+        /* 下部の土台となるコンテナ（ここでは切り抜かない） */
+        #ground-area {
             flex: 2;
             position: relative;
             background-color: transparent;
         }
 
-        /* 地面そのもの（ここだけ切り抜く） */
-        #ground-visual {
+        /* 氷の見た目（ここだけ切り抜く。z-indexは低く） */
+        #ice-slope {
             position: absolute;
             inset: 0;
             background: linear-gradient(160deg, #fff 0%, #dff9fb 100%);
+            /* なだらかな坂道の切り抜き */
             clip-path: polygon(0 40%, 85% 65%, 85% 100%, 0 100%);
             z-index: 1;
+        }
+
+        /* 落とし穴（氷より少し上に配置） */
+        #pit-hole {
+            position: absolute;
+            right: 0;
+            top: 0;
+            width: 15%;
+            height: 100%;
+            background: linear-gradient(to bottom, #000, var(--ocean-blue));
+            clip-path: polygon(20% 0, 100% 0, 100% 100%, 0% 100%);
+            z-index: 2;
+        }
+
+        /* ペンギン（一番手前に配置。z-indexを高く） */
+        #penguin {
+            position: absolute;
+            font-size: 5rem;
+            z-index: 10;
+            /* 足元を基準にする */
+            transform: translate(-50%, -85%); 
+            transition: transform 0.2s ease-out !important;
+            pointer-events: none;
         }
 
         .cloud { position: absolute; background: #fff; width: 100px; height: 40px; border-radius: 50px; opacity: 0.8; animation: moveCloud linear infinite; }
@@ -48,26 +72,6 @@
         #target-text { font-family: 'Consolas', monospace; font-size: 2.5rem; color: #fff; letter-spacing: 2px; }
         .correct { color: var(--term-green); text-shadow: 0 0 10px var(--term-green); }
         .current { border-bottom: 3px solid #fff; }
-
-        /* ペンギンは地面ビジュアルより上に配置 */
-        #penguin {
-            position: absolute;
-            font-size: 4rem;
-            z-index: 20;
-            transform: translate(-50%, -100%); /* 足元を基準点にする */
-            transition: transform 0.2s ease-out !important;
-        }
-
-        #pit {
-            position: absolute;
-            right: 0;
-            top: 0;
-            width: 15%;
-            height: 100%;
-            background: linear-gradient(to bottom, #000, var(--ocean-blue));
-            clip-path: polygon(20% 0, 100% 0, 100% 100%, 0% 100%);
-            z-index: 15;
-        }
 
         .overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.85); display: flex; flex-direction: column; justify-content: center; align-items: center; z-index: 100; color: white; }
         button { padding: 20px 60px; font-size: 2rem; background: var(--term-green); border: none; border-radius: 50px; cursor: pointer; box-shadow: 0 5px 0 #009432; }
@@ -96,10 +100,10 @@
         </div>
     </div>
 
-    <div id="ground-container">
-        <div id="ground-visual"></div>
+    <div id="ground-area">
+        <div id="ice-slope"></div>
+        <div id="pit-hole"></div>
         <div id="penguin">🐧</div>
-        <div id="pit"></div>
     </div>
 </div>
 
@@ -138,11 +142,9 @@
     let questionStartTime = 0; 
     const FIXED_LIMIT = 10; 
 
-    // スロープの定義（clip-pathの数値と連動）
-    const SLOPE_START_X = 0;
-    const SLOPE_END_X = 85;
-    const SLOPE_START_Y = 40; // 40% from top
-    const SLOPE_END_Y = 65;   // 65% from top
+    // スロープ定義
+    const SLOPE_START_Y = 40; // 開始時の高さ(%)
+    const SLOPE_END_Y = 65;   // 終了時の高さ(%)
 
     function initAudio() { if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)(); }
 
@@ -209,10 +211,10 @@
         // 横位置：10%から85%へ
         const currentPosX = 10 + (75 * progress);
         
-        // 縦位置：坂道のライン(40%〜65%)を計算
-        // Xの位置に基づいたYの比率を計算
-        const slopeYRange = SLOPE_END_Y - SLOPE_START_Y;
-        const currentPosY = SLOPE_START_Y + (slopeYRange * (currentPosX / SLOPE_END_X));
+        // 縦位置：坂道の角度(40%〜65%)にピッタリ合わせる
+        // 地面の clip-path 0 40% と 85% 65% を結ぶ直線上の高さを計算
+        // Xの位置に対するYの座標： Y = 40 + (25 * (currentPosX / 85))
+        const currentPosY = 40 + (25 * (currentPosX / 85));
 
         const p = document.getElementById('penguin');
         p.style.left = currentPosX + "%";
@@ -238,10 +240,14 @@
                 refreshUI();
                 playSound(1000, 'sine', 0.1);
                 const p = document.getElementById('penguin');
-                // ジャンプ演出（transformを一時的に追加）
-                const originalTransform = getComputedStyle(p).transform;
-                p.style.transform = originalTransform + ' translateY(-50px) rotate(360deg)';
-                setTimeout(() => { p.style.transform = originalTransform; nextQuestion(); }, 200);
+                // ジャンプ演出（坂道からの相対距離で飛ぶ）
+                p.style.marginTop = "-50px"; 
+                p.style.transform = "translate(-50%, -85%) rotate(360deg)";
+                setTimeout(() => { 
+                    p.style.marginTop = "0px";
+                    p.style.transform = "translate(-50%, -85%) rotate(0deg)";
+                    nextQuestion(); 
+                }, 200);
             } else { updateDisplay(); }
         } else {
             playSound(200, 'square', 0.1);

@@ -195,10 +195,9 @@
 
     let currentQ, typedIndex, score, timeLeft, gameActive;
     let penguinPos = 10;
-    let currentSpeed = 0; // その問題のペンギンの速度
+    let currentSpeed = 0; // その問題の移動速度
     let audioCtx = null;
 
-    // --- 音声エンジンの初期化 ---
     function initAudio() {
         if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
     }
@@ -225,9 +224,12 @@
         nextQuestion();
         gameLoop();
         
-        setInterval(() => {
+        const timer = setInterval(() => {
             if(gameActive) timeLeft--;
-            if(timeLeft <= 0) endGame();
+            if(timeLeft <= 0) {
+                clearInterval(timer);
+                endGame();
+            }
         }, 1000);
     }
 
@@ -235,14 +237,14 @@
         currentQ = questions[Math.floor(Math.random() * questions.length)];
         typedIndex = 0;
         penguinPos = 10; 
-        
-        // --- 【新ロジック】速度の計算 ---
-        // 1秒間に2文字打つペース(2KPS)を想定
-        // 猶予時間(s) = 文字数 / 2
-        // 移動距離(75%) を 猶予時間 で割って、さらに秒間60フレーム(FPS)で割る
-        const timeLimit = currentQ.cmd.length / 2; 
-        currentSpeed = 75 / timeLimit / 60; 
-        
+
+        // --- 【今回の肝】速度の動的計算 ---
+        // 10%から85%まで（距離75%）を、1秒間に2文字のペースで進む設定
+        const targetCPS = 2; // 1秒あたりのキー数（2キー/秒）
+        const timeLimit = currentQ.cmd.length / targetCPS; // 猶予秒数
+        // 1フレーム(1/60秒)あたりの移動量を算出
+        currentSpeed = (75 / timeLimit) / 60;
+
         updateDisplay();
     }
 
@@ -260,16 +262,15 @@
     function gameLoop() {
         if (!gameActive) return;
 
-        // 計算された速度で移動
+        // 計算された一定速度で進む（押し戻しなし）
         penguinPos += currentSpeed;
         document.getElementById('penguin').style.left = penguinPos + "%";
 
-        // 穴に落ちた！
         if (penguinPos > 85) {
             playSound(150, 'sawtooth', 0.3);
             penguinPos = 10;
             score = Math.max(0, score - 50);
-            nextQuestion(); // 自動的に次の問題へ
+            nextQuestion();
         }
 
         requestAnimationFrame(gameLoop);
@@ -285,28 +286,23 @@
 
         if (e.key === currentQ.cmd[typedIndex]) {
             typedIndex++;
-            playSound(600, 'sine', 0.05); 
-            
+            playSound(600, 'sine', 0.05);
             if (typedIndex >= currentQ.cmd.length) {
                 score += 100;
-                playSound(1000, 'sine', 0.1); 
+                playSound(1000, 'sine', 0.1);
                 
                 // ジャンプ演出
                 const p = document.getElementById('penguin');
                 p.style.transform = 'translateY(-50px) rotate(360deg)';
-                
-                // 少しだけ待ってから次の問題へ（リセット）
-                gameActive = false; // アニメーション中にペンギンが動かないように一時停止
                 setTimeout(() => {
                     p.style.transform = 'translateY(0) rotate(0)';
-                    gameActive = true;
                     nextQuestion();
                 }, 200);
             } else {
                 updateDisplay();
             }
         } else {
-            playSound(200, 'square', 0.1); 
+            playSound(200, 'square', 0.1);
             document.body.classList.add('miss-flash');
             setTimeout(() => document.body.classList.remove('miss-flash'), 100);
         }
@@ -320,5 +316,6 @@
 </script>
 </body>
 </html>
+
 
 

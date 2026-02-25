@@ -196,6 +196,9 @@
     let currentQ, typedIndex, score, timeLeft, gameActive;
     let penguinPos = 10;
     let audioCtx = null;
+    
+    // --- 【変更点】基本速度の設定 ---
+    let baseSpeed = 0.15; 
 
     // --- 音声エンジンの初期化 ---
     function initAudio() {
@@ -248,12 +251,12 @@
         document.getElementById('target-desc').innerText = currentQ.desc;
     }
 
+    // --- 【変更点】gameLoop のロジックを更新 ---
     function gameLoop() {
         if (!gameActive) return;
 
-        // ペンギンが右へ進む（文字数に応じて速度を調整）
-        const speed = 0.05 + (currentQ.cmd.length * 0.002);
-        penguinPos += speed;
+        // ペンギンが一定速度で右へ進む
+        penguinPos += baseSpeed;
         document.getElementById('penguin').style.left = penguinPos + "%";
 
         // 穴に落ちた！
@@ -267,6 +270,7 @@
         requestAnimationFrame(gameLoop);
     }
 
+    // --- 【変更点】keydown 内で「押し戻す」処理を追加 ---
     window.addEventListener('keydown', (e) => {
         if (!gameActive) {
             if (e.key === 'Enter') startGame();
@@ -277,14 +281,21 @@
 
         if (e.key === currentQ.cmd[typedIndex]) {
             typedIndex++;
+            
+            // 正解するごとに、文字数に応じてペンギンを左に押し戻す
+            const pushBackAmount = 75 / currentQ.cmd.length; 
+            penguinPos = Math.max(10, penguinPos - pushBackAmount);
+            
             playSound(600, 'sine', 0.05); // 打鍵音
             if (typedIndex >= currentQ.cmd.length) {
                 score += 100;
                 playSound(1000, 'sine', 0.1); // クリア音
+                
                 // ペンギンがジャンプする演出
-                document.getElementById('penguin').style.transform = 'translateY(-50px) rotate(360deg)';
+                const p = document.getElementById('penguin');
+                p.style.transform = 'translateY(-50px) rotate(360deg)';
                 setTimeout(() => {
-                    document.getElementById('penguin').style.transform = 'translateY(0) rotate(0)';
+                    p.style.transform = 'translateY(0) rotate(0)';
                     nextQuestion();
                 }, 200);
             } else {
@@ -305,3 +316,4 @@
 </script>
 </body>
 </html>
+

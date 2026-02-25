@@ -233,21 +233,22 @@
         }, 1000);
     }
 
-    function nextQuestion() {
-        currentQ = questions[Math.floor(Math.random() * questions.length)];
-        typedIndex = 0;
-        penguinPos = 10; 
+function nextQuestion() {
+    currentQ = questions[Math.floor(Math.random() * questions.length)];
+    typedIndex = 0;
+    penguinPos = 10; 
 
-        // --- 【今回の肝】速度の動的計算 ---
-        // 10%から85%まで（距離75%）を、1秒間に2文字のペースで進む設定
-        const targetCPS = 0.1; // 1秒あたりのキー数（0.1キー/秒）
-        const timeLimit = currentQ.cmd.length / targetCPS; // 猶予秒数
-        // 1フレーム(1/60秒)あたりの移動量を算出
-        currentSpeed = (75 / timeLimit) / 60;
+    // --- 難易度の再調整 ---
+    const baseTime = 7.0; // 【新設】どんなに短い単語でも最低7秒は待つ
+    const extraTimePerChar = 0.8; // 1文字増えるごとに追加される秒数（例: 1秒）
+    
+    const timeLimit = baseTime + (currentQ.cmd.length * extraTimePerChar);
+    
+    // 速度計算（距離75%をtimeLimit秒で割る）
+    currentSpeed = (75 / timeLimit) / 60;
 
-        updateDisplay();
-    }
-
+    updateDisplay();
+}
     function updateDisplay() {
         let html = "";
         for (let i = 0; i < currentQ.cmd.length; i++) {
@@ -316,6 +317,7 @@
 </script>
 </body>
 </html>
+
 
 
 

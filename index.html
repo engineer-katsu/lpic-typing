@@ -142,6 +142,11 @@
 </head>
 <body onclick="initAudio()">
 
+<div style="position: absolute; top: 10px; left: 0; width: 100%; display: flex; justify-content: space-around; z-index: 100; color: white; font-family: monospace; font-size: 2rem; pointer-events: none; text-shadow: 2px 2px 4px black;">
+    <div>TIME: <span id="ui-time">120</span></div>
+    <div>SCORE: <span id="ui-score">0</span></div>
+</div>
+
 <div id="world">
     <div id="sky">
         <div class="cloud" style="top: 20%; animation-duration: 25s;"></div>
@@ -228,18 +233,26 @@
         osc.stop(audioCtx.currentTime + duration);
     }
 
+    /* 追加：画面表示を更新する関数 */
+    function refreshUI() {
+        document.getElementById('ui-time').innerText = timeLeft;
+        document.getElementById('ui-score').innerText = score;
+    }
+
     function startGame() {
         if (gameActive) return;
         document.getElementById('start-screen').style.display = 'none';
         gameActive = true;
         score = 0;
-        timeLeft = 60;
+        timeLeft = 120; /* 120に変更 */
+        refreshUI();    /* 追加 */
         nextQuestion();
         requestAnimationFrame(gameLoop);
         
         setInterval(() => {
             if(gameActive) {
                 timeLeft--;
+                refreshUI(); /* 追加：タイム更新 */
                 if(timeLeft <= 0) endGame();
             }
         }, 1000);
@@ -282,6 +295,7 @@
         if (elapsed >= FIXED_LIMIT) {
             playSound(150, 'sawtooth', 0.3);
             score = Math.max(0, score - 50);
+            refreshUI(); /* 追加：スコア更新 */
             nextQuestion(); 
         }
 
@@ -300,6 +314,7 @@
             playSound(600, 'sine', 0.05);
             if (typedIndex >= currentQ.cmd.length) {
                 score += 100;
+                refreshUI(); /* 追加：スコア更新 */
                 playSound(1000, 'sine', 0.1);
                 
                 const p = document.getElementById('penguin');
@@ -326,13 +341,3 @@
 </script>
 </body>
 </html>
-
-
-
-
-
-
-
-
-
-

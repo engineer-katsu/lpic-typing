@@ -195,7 +195,7 @@
 
     let currentQ, typedIndex, score, timeLeft, gameActive;
     let penguinPos = 10;
-    let currentSpeed = 0; // その問題の移動速度
+    let currentSpeed = 0; 
     let audioCtx = null;
 
     function initAudio() {
@@ -233,22 +233,18 @@
         }, 1000);
     }
 
-function nextQuestion() {
-    currentQ = questions[Math.floor(Math.random() * questions.length)];
-    typedIndex = 0;
-    penguinPos = 10; 
+    function nextQuestion() {
+        currentQ = questions[Math.floor(Math.random() * questions.length)];
+        typedIndex = 0;
+        penguinPos = 10; 
 
-    // --- 難易度の再調整 ---
-    const baseTime = 7.0; // 【新設】どんなに短い単語でも最低7秒は待つ
-    const extraTimePerChar = 0.8; // 1文字増えるごとに追加される秒数（例: 1秒）
-    
-    const timeLimit = baseTime + (currentQ.cmd.length * extraTimePerChar);
-    
-    // 速度計算（距離75%をtimeLimit秒で割る）
-    currentSpeed = (75 / timeLimit) / 60;
+        // --- 【今回の肝】全問題10秒固定 ---
+        const fixedTime = 10; // ここで秒数を指定
+        currentSpeed = (75 / fixedTime) / 60; // 1フレームあたりの速度
 
-    updateDisplay();
-}
+        updateDisplay();
+    }
+
     function updateDisplay() {
         let html = "";
         for (let i = 0; i < currentQ.cmd.length; i++) {
@@ -263,7 +259,6 @@ function nextQuestion() {
     function gameLoop() {
         if (!gameActive) return;
 
-        // 計算された一定速度で進む（押し戻しなし）
         penguinPos += currentSpeed;
         document.getElementById('penguin').style.left = penguinPos + "%";
 
@@ -292,7 +287,6 @@ function nextQuestion() {
                 score += 100;
                 playSound(1000, 'sine', 0.1);
                 
-                // ジャンプ演出
                 const p = document.getElementById('penguin');
                 p.style.transform = 'translateY(-50px) rotate(360deg)';
                 setTimeout(() => {
@@ -317,6 +311,7 @@ function nextQuestion() {
 </script>
 </body>
 </html>
+
 
 
 

@@ -195,8 +195,11 @@
 
     let currentQ, typedIndex, score, timeLeft, gameActive;
     let penguinPos = 10;
-    let currentSpeed = 0; 
     let audioCtx = null;
+    
+    // 時間管理用の変数
+    let lastTime = 0;
+    const FIXED_LIMIT = 10; // ★ここで秒数を指定（10秒）
 
     function initAudio() {
         if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
@@ -222,7 +225,10 @@
         score = 0;
         timeLeft = 60;
         nextQuestion();
-        gameLoop();
+        
+        // 初回の時間を記録
+        lastTime = performance.now();
+        requestAnimationFrame(gameLoop);
         
         const timer = setInterval(() => {
             if(gameActive) timeLeft--;
@@ -237,11 +243,6 @@
         currentQ = questions[Math.floor(Math.random() * questions.length)];
         typedIndex = 0;
         penguinPos = 10; 
-
-        // --- 【今回の肝】全問題10秒固定 ---
-        const fixedTime = 10; // ここで秒数を指定
-        currentSpeed = (75 / fixedTime) / 60; // 1フレームあたりの速度
-
         updateDisplay();
     }
 
@@ -256,10 +257,20 @@
         document.getElementById('target-desc').innerText = currentQ.desc;
     }
 
-    function gameLoop() {
+    // --- 【重要】時間ベースの移動ロジック ---
+    function gameLoop(currentTime) {
         if (!gameActive) return;
 
-        penguinPos += currentSpeed;
+        // 前回のフレームからの経過時間を秒単位で計算
+        const deltaTime = (currentTime - lastTime) / 1000;
+        lastTime = currentTime;
+
+        // 10秒で75%進むための秒間速度を計算
+        // 速度 v = 距離(75) / 時間(10)
+        const speedPerSecond = 75 / FIXED_LIMIT;
+        
+        // 移動距離を反映
+        penguinPos += speedPerSecond * deltaTime;
         document.getElementById('penguin').style.left = penguinPos + "%";
 
         if (penguinPos > 85) {
@@ -311,6 +322,7 @@
 </script>
 </body>
 </html>
+
 
 
 

@@ -10,7 +10,7 @@
             --ice-white: #f0f8ff;
             --term-green: #00ff41;
             --error-red: #ff4757;
-            --ocean-blue: #0a3d62; /* より深い海の色に変更 */
+            --ocean-blue: #0a3d62;
         }
 
         body {
@@ -43,13 +43,13 @@
             z-index: 10;
         }
 
-        /* --- 【変更】坂道にする --- */
+        /* --- 【修正】坂道をなだらかにする --- */
         #ground {
             flex: 2;
             background: linear-gradient(160deg, #fff 0%, #dff9fb 100%);
             position: relative;
-            /* 左が高く、右が低い坂道の形に切り抜く */
-            clip-path: polygon(0 15%, 85% 90%, 85% 100%, 0 100%);
+            /* 前より数値を抑えて、なだらかな斜面に変更 */
+            clip-path: polygon(0 40%, 85% 65%, 85% 100%, 0 100%);
         }
 
         /* --- 雲のアニメーション --- */
@@ -85,15 +85,12 @@
         /* --- ペンギンと穴 --- */
         #penguin {
             position: absolute;
-            bottom: 40px;
             left: 10%;
             font-size: 5rem;
             z-index: 20;
-            /* 下記の!important付きstyleが優先されます */
-            transition: transform 0.2s;
+            transition: transform 0.2s ease-out !important;
         }
 
-        /* --- 【変更】文字を消し、穴のビジュアルを調整 --- */
         #pit {
             position: absolute;
             right: 0;
@@ -180,7 +177,7 @@
         { cmd: "cp -rp src/ dest/", desc: "属性保持コピー" },
         { cmd: "rm -rf /tmp/old", desc: "強制ディレクトリ削除" },
         { cmd: "mkdir -p /a/b/c", desc: "階層ディレクトリ作成" },
-        { cmd: "chmod 755 script", desc: "実行権限付与" },
+        { cmd: "chmod 755 script", desc: "実行権付与" },
         { cmd: "chown root:root file", desc: "所有者変更" },
         { cmd: "grep -i 'error' file", desc: "大文字小文字無視検索" },
         { cmd: "systemctl start sshd", desc: "SSH起動" },
@@ -199,13 +196,9 @@
     const START_POS = 10;   
     const END_POS = 75;     
 
-    const style = document.createElement('style');
-    style.innerHTML = `
-        #penguin { 
-            transition: transform 0.2s ease-out !important; 
-        }
-    `;
-    document.head.appendChild(style);
+    // 坂道の高さを定義（見た目と同期させる）
+    const START_Y_PX = 150; // 開始時の底からの高さ(px)
+    const END_Y_PX = 85;    // 穴に届く時の底からの高さ(px)
 
     function initAudio() {
         if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
@@ -276,12 +269,12 @@
         const elapsed = (currentTime - questionStartTime) / 1000;
         const progress = Math.min(elapsed / FIXED_LIMIT, 1);
 
-        // 横位置
+        // 横位置の計算
         const currentPos = START_POS + ((END_POS - START_POS) * progress);
         document.getElementById('penguin').style.left = currentPos + "%";
 
-        // 【追加】坂道に合わせて高さを変える (スタート110pxから徐々に25pxへ滑り落ちる)
-        const currentBottom = 110 - (progress * 85);
+        // 【修正】坂道の角度に合わせて高さを計算 (START_Y_PXからEND_Y_PXへなだらかに移動)
+        const currentBottom = START_Y_PX - (progress * (START_Y_PX - END_Y_PX));
         document.getElementById('penguin').style.bottom = currentBottom + "px";
 
         if (elapsed >= FIXED_LIMIT) {
@@ -310,6 +303,7 @@
                 playSound(1000, 'sine', 0.1);
                 
                 const p = document.getElementById('penguin');
+                // ジャンプ中も接地感を崩さないよう調整
                 p.style.transform = 'translateY(-50px) rotate(360deg)';
                 setTimeout(() => {
                     p.style.transform = 'translateY(0) rotate(0)';

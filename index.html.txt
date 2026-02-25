@@ -1,0 +1,151 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>LPIC-1 Command Typing Tutor</title>
+    <style>
+        :root {
+            --bg-color: #1e1e1e;
+            --term-green: #00ff41;
+            --term-dim: #008f11;
+            --error-red: #ff5f56;
+        }
+        body {
+            background-color: var(--bg-color);
+            color: var(--term-green);
+            font-family: 'Courier New', Courier, monospace;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100vh;
+            margin: 0;
+            overflow: hidden;
+        }
+        #terminal {
+            width: 90%;
+            max-width: 800px;
+            border: 2px solid var(--term-dim);
+            padding: 20px;
+            box-shadow: 0 0 20px rgba(0, 255, 65, 0.2);
+            border-radius: 5px;
+        }
+        .header { border-bottom: 1px solid var(--term-dim); margin-bottom: 20px; padding-bottom: 10px; font-size: 0.9rem; }
+        #question-desc { color: #aaa; margin-bottom: 5px; font-size: 0.9rem; }
+        #target-text { font-size: 2rem; letter-spacing: 2px; margin-bottom: 20px; min-height: 3rem; word-break: break-all; }
+        #input-field {
+            background: transparent;
+            border: none;
+            color: white;
+            font-size: 2rem;
+            font-family: inherit;
+            width: 100%;
+            outline: none;
+            caret-color: var(--term-green);
+        }
+        .correct { color: var(--term-green); }
+        .incorrect { background-color: var(--error-red); color: white; }
+        #stats { margin-top: 20px; color: var(--term-dim); display: flex; justify-content: space-between; }
+    </style>
+</head>
+<body>
+
+<div id="terminal">
+    <div class="header">LPIC-1 (101/102) TYPING SHELL v1.0</div>
+    <div id="question-desc">---</div>
+    <div id="target-text"></div>
+    <input type="text" id="input-field" autofocus autocomplete="off">
+    
+    <div id="stats">
+        <span>Score: <span id="score">0</span></span>
+        <span>Accuracy: <span id="accuracy">100</span>%</span>
+        <span>Target: LPIC-1 Certification</span>
+    </div>
+</div>
+
+<script>
+    const questions = [
+        // 101用語
+        { cmd: "ls -l /etc/pki", desc: "101: 証明書ディレクトリの詳細表示" },
+        { cmd: "chmod 755 script.sh", desc: "101: 所有者に実行権限、その他に読込・実行権限を付与" },
+        { cmd: "chown root:root file", desc: "101: ファイルの所有者とグループをrootに変更" },
+        { cmd: "grep -i 'error' var/log/syslog", desc: "101: 大文字小文字を区別せずerrorを検索" },
+        { cmd: "fdisk -l", desc: "101: パーティション構成の表示" },
+        // 102用語
+        { cmd: "systemctl restart sshd", desc: "102: SSHサービスを再起動" },
+        { cmd: "ip addr show", desc: "102: IPアドレス情報の表示" },
+        { cmd: "useradd -m newuser", desc: "102: ホームディレクトリを作成してユーザー追加" },
+        { cmd: "apt-get update", desc: "102: パッケージリストの更新" },
+        { cmd: "vi /etc/hostname", desc: "102: ホスト名設定ファイルの編集" }
+    ];
+
+    let currentIdx = 0;
+    let totalKeys = 0;
+    let errorKeys = 0;
+
+    const targetElem = document.getElementById('target-text');
+    const descElem = document.getElementById('question-desc');
+    const inputElem = document.getElementById('input-field');
+    const scoreElem = document.getElementById('score');
+    const accuracyElem = document.getElementById('accuracy');
+
+    function initQuestion() {
+        const q = questions[currentIdx];
+        targetElem.textContent = q.cmd;
+        descElem.textContent = q.desc;
+        inputElem.value = "";
+    }
+
+    inputElem.addEventListener('input', () => {
+        const target = questions[currentIdx].cmd;
+        const currentInput = inputElem.value;
+        totalKeys++;
+
+        // 正誤判定の視覚化
+        let html = "";
+        let isAllCorrect = true;
+
+        for (let i = 0; i < target.length; i++) {
+            if (i < currentInput.length) {
+                if (target[i] === currentInput[i]) {
+                    html += `<span class="correct">${target[i]}</span>`;
+                } else {
+                    html += `<span class="incorrect">${target[i]}</span>`;
+                    isAllCorrect = false;
+                    errorKeys++;
+                }
+            } else {
+                html += `<span>${target[i]}</span>`;
+                isAllCorrect = false;
+            }
+        }
+
+        targetElem.innerHTML = html;
+
+        // 全て正解したら次へ
+        if (currentInput === target) {
+            currentIdx++;
+            scoreElem.textContent = currentIdx;
+            if (currentIdx < questions.length) {
+                setTimeout(initQuestion, 100);
+            } else {
+                targetElem.textContent = "MISSION COMPLETE!";
+                descElem.textContent = "全てのコマンドをマスターしました。";
+                inputElem.disabled = true;
+            }
+        }
+
+        // 精度計算
+        const acc = Math.max(0, Math.floor(((totalKeys - errorKeys) / totalKeys) * 100));
+        accuracyElem.textContent = acc;
+    });
+
+    // 画面のどこをクリックしても入力欄にフォーカス
+    document.addEventListener('click', () => inputElem.focus());
+
+    initQuestion();
+</script>
+
+</body>
+</html>

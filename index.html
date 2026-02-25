@@ -24,41 +24,38 @@
         #sky { flex: 2; position: relative; background: linear-gradient(to bottom, #2980b9, #6dd5fa); overflow: hidden; }
         #typing-area { flex: 3; display: flex; flex-direction: column; justify-content: center; align-items: center; z-index: 10; }
         
-        /* 下部の土台となるコンテナ（ここでは切り抜かない） */
         #ground-area {
             flex: 2;
             position: relative;
             background-color: transparent;
         }
 
-        /* 氷の見た目（ここだけ切り抜く。z-indexは低く） */
+        /* 氷の坂道（なだらかに、右端を崖にする） */
         #ice-slope {
             position: absolute;
             inset: 0;
             background: linear-gradient(160deg, #fff 0%, #dff9fb 100%);
-            /* なだらかな坂道の切り抜き */
-            clip-path: polygon(0 40%, 85% 65%, 85% 100%, 0 100%);
+            /* 右端 85% の位置で高さ 60% になるように設定 */
+            clip-path: polygon(0 40%, 85% 60%, 85% 100%, 0 100%);
             z-index: 1;
         }
 
-        /* 落とし穴（氷より少し上に配置） */
+        /* 落とし穴（坂の終わりより低く配置） */
         #pit-hole {
             position: absolute;
             right: 0;
-            top: 0;
+            top: 65%; /* 坂の終わり(60%)よりさらに低くして段差を作る */
             width: 15%;
-            height: 100%;
+            height: 35%;
             background: linear-gradient(to bottom, #000, var(--ocean-blue));
-            clip-path: polygon(20% 0, 100% 0, 100% 100%, 0% 100%);
+            border-top: 5px solid rgba(0,0,0,0.3);
             z-index: 2;
         }
 
-        /* ペンギン（一番手前に配置。z-indexを高く） */
         #penguin {
             position: absolute;
             font-size: 5rem;
             z-index: 10;
-            /* 足元を基準にする */
             transform: translate(-50%, -85%); 
             transition: transform 0.2s ease-out !important;
             pointer-events: none;
@@ -142,9 +139,10 @@
     let questionStartTime = 0; 
     const FIXED_LIMIT = 10; 
 
-    // スロープ定義
-    const SLOPE_START_Y = 40; // 開始時の高さ(%)
-    const SLOPE_END_Y = 65;   // 終了時の高さ(%)
+    // スロープの物理設定（CSSと同期）
+    const SLOPE_START_Y = 40; 
+    const SLOPE_END_Y = 60;   
+    const SLOPE_END_X = 85;
 
     function initAudio() { if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)(); }
 
@@ -211,10 +209,9 @@
         // 横位置：10%から85%へ
         const currentPosX = 10 + (75 * progress);
         
-        // 縦位置：坂道の角度(40%〜65%)にピッタリ合わせる
-        // 地面の clip-path 0 40% と 85% 65% を結ぶ直線上の高さを計算
-        // Xの位置に対するYの座標： Y = 40 + (25 * (currentPosX / 85))
-        const currentPosY = 40 + (25 * (currentPosX / 85));
+        // 縦位置：坂道の角度に合わせる
+        // Y = 40 + (20 * (現在位置 / 85))
+        const currentPosY = SLOPE_START_Y + ((SLOPE_END_Y - SLOPE_START_Y) * (currentPosX / SLOPE_END_X));
 
         const p = document.getElementById('penguin');
         p.style.left = currentPosX + "%";
@@ -240,7 +237,6 @@
                 refreshUI();
                 playSound(1000, 'sine', 0.1);
                 const p = document.getElementById('penguin');
-                // ジャンプ演出（坂道からの相対距離で飛ぶ）
                 p.style.marginTop = "-50px"; 
                 p.style.transform = "translate(-50%, -85%) rotate(360deg)";
                 setTimeout(() => { 
@@ -259,7 +255,7 @@
     function endGame() {
         gameActive = false;
         document.getElementById('result-screen').style.display = 'flex';
-        document.getElementById('stats').innerHTML = `スコア: ${score}点<br>LPICレベル: ${score > 1500 ? '実務レベル' : '一般レベル'}`;
+        document.getElementById('stats').innerHTML = `スコア: ${score}点<br>称号: ${score > 1500 ? '実務レベル' : '一般レベル'}`;
     }
 </script>
 </body>

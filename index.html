@@ -193,13 +193,18 @@
         { cmd: "/etc/shadow", desc: "パスワード保存ファイル" }
     ];
 
-    let currentQ, typedIndex, score, timeLeft, gameActive;
+    let currentQ, typedIndex, score, timeLeft, gameActive = false;
     let penguinPos = 10;
     let audioCtx = null;
     
-    // 時間管理用の変数
-    let lastTime = 0;
-    const FIXED_LIMIT = 10; // ★ここで秒数を指定（10秒）
+    // 【重要】時間管理用の変数
+    let questionStartTime = 0; 
+    const FIXED_LIMIT = 10; // 10秒固定
+
+    // CSSを動的に修正（JSで制御するためtransition: leftを消去）
+    const style = document.createElement('style');
+    style.innerHTML = '#penguin { transition: transform 0.2s !important; }'; // transformだけ残す
+    document.head.appendChild(style);
 
     function initAudio() {
         if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
@@ -220,14 +225,14 @@
     }
 
     function startGame() {
+        if (gameActive) return; // 二重起動防止
+        
         document.getElementById('start-screen').style.display = 'none';
         gameActive = true;
         score = 0;
         timeLeft = 60;
-        nextQuestion();
         
-        // 初回の時間を記録
-        lastTime = performance.now();
+        nextQuestion();
         requestAnimationFrame(gameLoop);
         
         const timer = setInterval(() => {
@@ -243,6 +248,7 @@
         currentQ = questions[Math.floor(Math.random() * questions.length)];
         typedIndex = 0;
         penguinPos = 10; 
+        questionStartTime = performance.now(); // 問題開始時間を記録
         updateDisplay();
     }
 
@@ -257,27 +263,24 @@
         document.getElementById('target-desc').innerText = currentQ.desc;
     }
 
-    // --- 【重要】時間ベースの移動ロジック ---
+    // --- 【修正】絶対時間ベースのループ ---
     function gameLoop(currentTime) {
         if (!gameActive) return;
 
-        // 前回のフレームからの経過時間を秒単位で計算
-        const deltaTime = (currentTime - lastTime) / 1000;
-        lastTime = currentTime;
+        // 問題開始からの経過時間（秒）
+        const elapsed = (currentTime - questionStartTime) / 1000;
 
-        // 10秒で75%進むための秒間速度を計算
-        // 速度 v = 距離(75) / 時間(10)
-        const speedPerSecond = 75 / FIXED_LIMIT;
+        // 進行度を計算（10秒で距離75%を進む）
+        // 位置 = 開始(10%) + (移動距離75% * (経過時間 / 制限時間))
+        penguinPos = 10 + (75 * (elapsed / FIXED_LIMIT));
         
-        // 移動距離を反映
-        penguinPos += speedPerSecond * deltaTime;
         document.getElementById('penguin').style.left = penguinPos + "%";
 
-        if (penguinPos > 85) {
+        // 10秒経過（穴に到達）
+        if (elapsed >= FIXED_LIMIT) {
             playSound(150, 'sawtooth', 0.3);
-            penguinPos = 10;
             score = Math.max(0, score - 50);
-            nextQuestion();
+            nextQuestion(); 
         }
 
         requestAnimationFrame(gameLoop);
@@ -322,6 +325,7 @@
 </script>
 </body>
 </html>
+
 
 
 

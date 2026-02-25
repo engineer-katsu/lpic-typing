@@ -121,8 +121,9 @@
 </div>
 
 <script>
-const questions = [
-    // --- 基本コマンド（引数なし） ---
+    // --- あなたの問題リスト（すべて保持しています） ---
+    const questions = [
+        // --- 基本コマンド（引数なし） ---
         { cmd: "pwd", desc: "現在の作業ディレクトリを表示" },
         { cmd: "clear", desc: "ターミナル画面を消去して整理" },
         { cmd: "uptime", desc: "システムの稼働時間と負荷を確認" },
@@ -136,8 +137,7 @@ const questions = [
         { cmd: "exit", desc: "現在のシェルやセッションを終了する" },
         { cmd: "lsusb", desc: "USBデバイスの情報を表示" },
         { cmd: "lspci", desc: "PCIデバイスの情報を表示" },
-    
-    // --- 重要ファイルパス ---
+        // --- 重要ファイルパス ---
         { cmd: "/etc/passwd", desc: "ユーザーアカウント情報が保存されているファイル" },
         { cmd: "/etc/group", desc: "グループ情報が保存されているファイル" },
         { cmd: "/etc/profile", desc: "システム全体の環境設定スクリプト" },
@@ -148,8 +148,7 @@ const questions = [
         { cmd: "/var/log/auth.log", desc: "認証に関するログファイル（Debian系）" },
         { cmd: "/etc/bashrc", desc: "bashのシステム全体用設定ファイル" },
         { cmd: "/boot/grub/grub.cfg", desc: "GRUB2のメイン設定ファイル" },
-
-    // --- 追加の頻出コマンド ---
+        // --- 追加の頻出コマンド ---
         { cmd: "man ls", desc: "lsコマンドのマニュアルを表示" },
         { cmd: "cp -a", desc: "元ファイルの属性・リンクを完全に維持してコピー" },
         { cmd: "ln target link", desc: "ハードリンクを作成" },
@@ -163,9 +162,7 @@ const questions = [
         { cmd: "locate config", desc: "DBを利用して高速にファイルを検索" },
         { cmd: "whatis ls", desc: "コマンドの短い説明を表示" },
         { cmd: "which python", desc: "実行されるコマンドのフルパスを表示" },
-
         // --- 101: システムアーキテクチャ・ファイル管理 ---
-
         { cmd: "ls -la", desc: "隠しファイルを含む全ファイルの詳細を表示" },
         { cmd: "ls -ltr", desc: "更新日時が古い順に表示（実務でログ確認に多用）" },
         { cmd: "cp -rp src/ dest/", desc: "権限や属性を保持したままディレクトリを再帰的にコピー" },
@@ -177,23 +174,18 @@ const questions = [
         { cmd: "chmod 644 file", desc: "所有者に読書権限、その他に読込権限を付与" },
         { cmd: "chmod 755 script.sh", desc: "スクリプトに実行権限を付与" },
         { cmd: "umask 022", desc: "新規ファイルのデフォルト権限を設定" },
-
-
         // --- 101: テキスト処理 ---
-
         { cmd: "cat /etc/passwd", desc: "ファイルの中身を全表示" },
         { cmd: "less /var/log/messages", desc: "長いファイルを1画面ずつ表示（閲覧に最適）" },
         { cmd: "head -n 10 file", desc: "ファイルの先頭10行を表示" },
         { cmd: "tail -f /var/log/syslog", desc: "ログの更新をリアルタイムで監視" },
         { cmd: "grep -i 'error' file", desc: "大文字小文字を区別せず検索" },
+        { cmd: "grep -v '^#' file", desc: "コメント行（#開始）を除外して表示" },
         { cmd: "sed -i 's/old/new/g' file", desc: "ファイル内の文字列を直接置換" },
         { cmd: "awk '{print $1}' file", desc: "各行の1番目の項目だけを抽出" },
         { cmd: "sort -u file", desc: "重複を排除して並べ替え" },
         { cmd: "wc -l file", desc: "ファイルの行数をカウント" },
-
-
         // --- 101: プロセス管理・ディスク ---
-
         { cmd: "ps aux", desc: "実行中の全プロセスを詳細表示" },
         { cmd: "top", desc: "リソース使用率をリアルタイム表示（Qで終了）" },
         { cmd: "kill -9 1234", desc: "プロセスID 1234を強制終了" },
@@ -202,11 +194,7 @@ const questions = [
         { cmd: "du -sh *", desc: "現在のディレクトリ内の容量合計を表示" },
         { cmd: "fdisk -l", desc: "ディスクパーティション構成を確認" },
         { cmd: "mount", desc: "マウントされているデバイスを表示" },
-
-
-
         // --- 102: シェル・スクリプト・ネットワーク ---
-
         { cmd: "echo $PATH", desc: "コマンドの検索パスを表示" },
         { cmd: "export VAR=val", desc: "環境変数を設定" },
         { cmd: "alias ll='ls -l'", desc: "コマンドの別名を設定" },
@@ -217,11 +205,7 @@ const questions = [
         { cmd: "ss -ant", desc: "TCP接続の状態を表示" },
         { cmd: "dig google.com", desc: "DNSの正引き情報を確認" },
         { cmd: "ssh -p 22 user@host", desc: "ポートを指定してリモート接続" },
-
-
-
         // --- 102: システムサービス・管理 ---
-
         { cmd: "systemctl start httpd", desc: "Webサーバーを起動" },
         { cmd: "systemctl stop firewalld", desc: "ファイアウォールを停止" },
         { cmd: "systemctl enable sshd", desc: "SSHの自動起動を有効化" },
@@ -232,27 +216,18 @@ const questions = [
         { cmd: "passwd username", desc: "指定ユーザーのパスワードを変更" },
         { cmd: "groupadd team-a", desc: "新しいグループを作成" },
         { cmd: "id root", desc: "ユーザーのUID/GIDを確認" },
-
-
-
         // --- 102: パッケージ管理 ---
-
         { cmd: "yum install nginx", desc: "RedHat系でパッケージをインストール" },
         { cmd: "apt update && apt upgrade", desc: "Debian系で全パッケージを更新" },
         { cmd: "rpm -qa", desc: "インストール済みのRPMパッケージを全表示" },
         { cmd: "dpkg -l", desc: "インストール済みのDebianパッケージを一覧表示" },
-
-        
-
         // --- 頻出・重要設定ファイル ---
-
         { cmd: "/etc/hostname", desc: "ホスト名を設定するファイル" },
         { cmd: "/etc/hosts", desc: "IPアドレスとホスト名の対応表" },
         { cmd: "/etc/resolv.conf", desc: "DNSサーバーの設定ファイル" },
         { cmd: "/etc/fstab", desc: "ファイルシステムの自動マウント設定" },
         { cmd: "/etc/shadow", desc: "暗号化されたパスワードが保存されるファイル" },
         { cmd: "/etc/sudoers", desc: "sudo権限を管理するファイル（visudoで編集）" }
-
     ];
 
     let currentQ, typedIndex, score, timeLeft, gameActive = false;
@@ -260,10 +235,20 @@ const questions = [
     let questionStartTime = 0; 
     const FIXED_LIMIT = 10; 
 
-    // スロープの物理設定（CSSと同期）
+    // 山札管理
+    let shuffledQuestions = [];
+
     const SLOPE_START_Y = 40; 
     const SLOPE_END_Y = 60;   
     const SLOPE_END_X = 85;
+
+    // シャッフル用アルゴリズム
+    function shuffleArray(array) {
+        for (let i = array.length - 1; i > 0; i--) {
+            const j = Math.floor(Math.random() * (i + 1));
+            [array[i], array[j]] = [array[j], array[i]];
+        }
+    }
 
     function initAudio() { if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)(); }
 
@@ -290,6 +275,11 @@ const questions = [
         gameActive = true;
         score = 0;
         timeLeft = 90;
+
+        // ゲーム開始時に山札を作成してシャッフル
+        shuffledQuestions = [...questions]; 
+        shuffleArray(shuffledQuestions);
+
         refreshUI();
         nextQuestion();
         requestAnimationFrame(gameLoop);
@@ -304,7 +294,13 @@ const questions = [
     }
 
     function nextQuestion() {
-        currentQ = questions[Math.floor(Math.random() * questions.length)];
+        // 山札が空になったら再補充
+        if (shuffledQuestions.length === 0) {
+            shuffledQuestions = [...questions];
+            shuffleArray(shuffledQuestions);
+        }
+        currentQ = shuffledQuestions.pop(); 
+
         typedIndex = 0;
         questionStartTime = performance.now();
         updateDisplay();
@@ -323,21 +319,13 @@ const questions = [
 
     function gameLoop(currentTime) {
         if (!gameActive) return;
-
         const elapsed = (currentTime - questionStartTime) / 1000;
         const progress = Math.min(elapsed / FIXED_LIMIT, 1);
-
-        // 横位置：10%から85%へ
         const currentPosX = 10 + (75 * progress);
-        
-        // 縦位置：坂道の角度に合わせる
-        // Y = 40 + (20 * (現在位置 / 85))
         const currentPosY = SLOPE_START_Y + ((SLOPE_END_Y - SLOPE_START_Y) * (currentPosX / SLOPE_END_X));
-
         const p = document.getElementById('penguin');
         p.style.left = currentPosX + "%";
         p.style.top = currentPosY + "%";
-
         if (elapsed >= FIXED_LIMIT) {
             playSound(150, 'sawtooth', 0.3);
             score = Math.max(0, score - 50);
@@ -381,6 +369,7 @@ const questions = [
 </script>
 </body>
 </html>
+
 
 
 

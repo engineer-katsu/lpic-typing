@@ -3,359 +3,304 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>LPIC Penguin Race - 101/102 Edition</title>
+    <title>LPIC Penguin Rescue</title>
     <style>
         :root {
-            --bg-dark: #0d1117;
-            --ice-blue: #a5f3fc;
+            --sky-blue: #87ceeb;
+            --ice-white: #f0f8ff;
             --term-green: #00ff41;
-            --text-white: #ffffff;
-            --error-red: #ff5f56;
+            --error-red: #ff4757;
+            --ocean-blue: #1e3799;
         }
 
         body {
-            background-color: var(--bg-dark);
-            color: var(--text-white);
-            font-family: 'Consolas', 'Courier New', monospace;
             margin: 0;
+            overflow: hidden;
+            font-family: 'Segoe UI', 'Hiragino Kaku Gothic ProN', sans-serif;
+            background-color: var(--sky-blue);
+        }
+
+        /* --- 背景・レイアウト --- */
+        #world {
             display: flex;
             flex-direction: column;
-            align-items: center;
             height: 100vh;
+        }
+
+        #sky {
+            flex: 2;
+            position: relative;
+            background: linear-gradient(to bottom, #2980b9, #6dd5fa);
             overflow: hidden;
         }
 
-        /* ヘッダー情報 */
-        #hud {
-            width: 100%;
-            max-width: 900px;
-            display: flex;
-            justify-content: space-between;
-            padding: 20px;
-            font-size: 1.5rem;
-            box-sizing: border-box;
-        }
-
-        /* メインタイピングエリア */
-        #display-area {
-            flex: 1;
+        #typing-area {
+            flex: 3;
             display: flex;
             flex-direction: column;
             justify-content: center;
             align-items: center;
-            width: 100%;
-            padding: 20px;
+            z-index: 10;
         }
 
-        #target-desc {
-            font-size: 1.4rem;
-            color: #bdc3c7;
-            margin-bottom: 15px;
-            min-height: 1.4em;
-        }
-
-        #target-text {
-            font-size: 3.2rem;
-            letter-spacing: 0.05em;
-            background: rgba(255, 255, 255, 0.05);
-            padding: 30px 50px;
-            border-radius: 15px;
-            border: 2px solid #333;
-            word-break: break-all;
-            max-width: 90%;
-        }
-
-        .correct { color: var(--term-green); }
-        .current-char { background-color: rgba(0, 255, 65, 0.3); border-bottom: 4px solid var(--term-green); }
-        .miss { background-color: var(--error-red); color: white; }
-
-        /* 走行エリア（トラック） */
-        #track-container {
-            width: 100%;
-            height: 180px;
-            background: linear-gradient(to bottom, #1a365d 0%, #2b6cb0 50%, var(--ice-blue) 100%);
+        #ground {
+            flex: 2;
+            background: linear-gradient(to bottom, #fff 0%, var(--ice-white) 100%);
             position: relative;
-            border-top: 4px solid #fff;
+            border-top: 5px solid #dff9fb;
         }
 
-        #ice-ground {
+        /* --- 雲のアニメーション --- */
+        .cloud {
             position: absolute;
-            bottom: 0;
-            width: 100%;
-            height: 40px;
             background: #fff;
+            width: 100px; height: 40px;
+            border-radius: 50px;
             opacity: 0.8;
+            animation: moveCloud linear infinite;
+        }
+        @keyframes moveCloud {
+            from { transform: translateX(110vw); }
+            to { transform: translateX(-20vw); }
         }
 
+        /* --- タイピングUI --- */
+        #cmd-display {
+            background: rgba(0, 0, 0, 0.7);
+            padding: 30px;
+            border-radius: 20px;
+            border: 4px solid #fff;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+            text-align: center;
+            max-width: 80%;
+        }
+
+        #target-desc { color: #ecf0f1; font-size: 1.2rem; margin-bottom: 10px; }
+        #target-text { font-family: 'Consolas', monospace; font-size: 2.5rem; color: #fff; letter-spacing: 2px; }
+        .correct { color: var(--term-green); text-shadow: 0 0 10px var(--term-green); }
+        .current { border-bottom: 3px solid #fff; }
+
+        /* --- ペンギンと穴 --- */
         #penguin {
             position: absolute;
-            bottom: 25px;
-            left: 5%;
-            font-size: 4.5rem;
-            transition: left 0.15s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-            z-index: 10;
-            filter: drop-shadow(2px 2px 2px rgba(0,0,0,0.3));
+            bottom: 40px;
+            left: 10%;
+            font-size: 5rem;
+            z-index: 20;
+            transition: left 0.1s linear, transform 0.2s;
         }
 
-        #goal-flag {
+        #pit {
             position: absolute;
-            right: 30px;
-            bottom: 30px;
-            font-size: 3.5rem;
+            right: 0;
+            bottom: 0;
+            width: 15%;
+            height: 100%;
+            background: var(--ocean-blue);
+            clip-path: polygon(20% 0, 100% 0, 100% 100%, 0% 100%);
         }
 
-        /* 画面レイヤー */
+        #pit-label {
+            position: absolute;
+            right: 20px;
+            bottom: 50px;
+            color: #fff;
+            font-weight: bold;
+            font-size: 1.5rem;
+        }
+
+        /* --- オーバーレイ --- */
         .overlay {
             position: fixed;
             inset: 0;
-            background: rgba(0, 0, 0, 0.9);
+            background: rgba(0,0,0,0.85);
             display: flex;
             flex-direction: column;
             justify-content: center;
             align-items: center;
             z-index: 100;
+            color: white;
         }
 
         button {
-            padding: 15px 50px;
-            font-size: 1.8rem;
+            padding: 20px 60px;
+            font-size: 2rem;
             background: var(--term-green);
-            color: #000;
             border: none;
-            cursor: pointer;
             border-radius: 50px;
-            font-weight: bold;
-            transition: transform 0.2s;
+            cursor: pointer;
+            box-shadow: 0 5px 0 #009432;
         }
+        button:active { transform: translateY(5px); box-shadow: none; }
 
-        button:hover { transform: scale(1.1); }
+        .miss-flash { animation: flash 0.1s; }
+        @keyframes flash {
+            from { background-color: var(--error-red); }
+            to { background-color: transparent; }
+        }
     </style>
 </head>
-<body>
+<body onclick="initAudio()">
+
+<div id="world">
+    <div id="sky">
+        <div class="cloud" style="top: 20%; animation-duration: 25s;"></div>
+        <div class="cloud" style="top: 50%; animation-duration: 40s; width: 150px;"></div>
+    </div>
+    
+    <div id="typing-area">
+        <div id="cmd-display">
+            <div id="target-desc">PRESS START</div>
+            <div id="target-text">LPIC RESCUE</div>
+        </div>
+    </div>
+
+    <div id="ground">
+        <div id="penguin">🐧</div>
+        <div id="pit"></div>
+        <div id="pit-label">落とし穴！</div>
+    </div>
+</div>
 
 <div id="start-screen" class="overlay">
-    <h1 style="font-size: 3.5rem; color: var(--term-green); margin-bottom: 10px;">🐧 LPIC PENGUIN RACE</h1>
-    <p style="font-size: 1.2rem; margin-bottom: 30px;">コマンドを正確に打って、ペンギンをゴールへ導け！</p>
-    <button onclick="startGame()">レース開始 (Enter)</button>
-    <p style="margin-top: 20px; color: #666;">※半角英数字で入力してください</p>
-</div>
-
-<div id="hud">
-    <div>TIME: <span id="timer">60</span>s</div>
-    <div>SCORE: <span id="score">0</span></div>
-</div>
-
-<div id="display-area">
-    <div id="target-desc">読み込み中...</div>
-    <div id="target-text">READY?</div>
-</div>
-
-<div id="track-container">
-    <div id="penguin">🐧</div>
-    <div id="goal-flag">🏁</div>
-    <div id="ice-ground"></div>
+    <h1 style="font-size: 4rem;">🐧 ペンギン救出作戦</h1>
+    <p style="font-size: 1.5rem; margin-bottom: 30px;">穴に落ちる前にコマンドを打ち込め！</p>
+    <button onclick="startGame()">レスキュー開始 (Enter)</button>
 </div>
 
 <div id="result-screen" class="overlay" style="display: none;">
-    <h2 style="font-size: 3rem;">FINISH!</h2>
-    <div id="final-stats" style="font-size: 1.5rem; text-align: center; margin: 20px 0;"></div>
-    <button onclick="location.reload()">もう一度挑戦 (Enter)</button>
+    <h2 id="result-title" style="font-size: 3rem;">FINISH!</h2>
+    <div id="stats" style="font-size: 1.5rem; margin: 30px; text-align: center;"></div>
+    <button onclick="location.reload()">再挑戦</button>
 </div>
 
 <script>
+    // --- 問題データ ---
     const questions = [
-        // --- 101: システムアーキテクチャ・ファイル管理 ---
-        { cmd: "ls -la", desc: "隠しファイルを含む全ファイルの詳細を表示" },
-        { cmd: "ls -ltr", desc: "更新日時が古い順に表示（実務でログ確認に多用）" },
-        { cmd: "cp -rp src/ dest/", desc: "権限や属性を保持したままディレクトリを再帰的にコピー" },
-        { cmd: "rm -rf /tmp/olddata", desc: "ディレクトリを警告なしで強制削除（取扱注意）" },
-        { cmd: "mkdir -p /a/b/c", desc: "中間ディレクトリも含めて一気に作成" },
-        { cmd: "ln -s target link", desc: "シンボリックリンク（ショートカット）を作成" },
-        { cmd: "find /var/log -name '*.log'", desc: "指定ディレクトリからログファイルを検索" },
-        { cmd: "chown root:root file", desc: "所有者とグループを両方rootに変更" },
-        { cmd: "chmod 644 file", desc: "所有者に読書権限、その他に読込権限を付与" },
-        { cmd: "chmod 755 script.sh", desc: "スクリプトに実行権限を付与" },
-        { cmd: "umask 022", desc: "新規ファイルのデフォルト権限を設定" },
-
-        // --- 101: テキスト処理 ---
-        { cmd: "cat /etc/passwd", desc: "ファイルの中身を全表示" },
-        { cmd: "less /var/log/messages", desc: "長いファイルを1画面ずつ表示（閲覧に最適）" },
-        { cmd: "head -n 10 file", desc: "ファイルの先頭10行を表示" },
-        { cmd: "tail -f /var/log/syslog", desc: "ログの更新をリアルタイムで監視" },
-        { cmd: "grep -i 'error' file", desc: "大文字小文字を区別せず検索" },
-        { cmd: "grep -v '^#' file", desc: "コメント行（#開始）を除外して表示" },
-        { cmd: "sed -i 's/old/new/g' file", desc: "ファイル内の文字列を直接置換" },
-        { cmd: "awk '{print $1}' file", desc: "各行の1番目の項目だけを抽出" },
-        { cmd: "sort -u file", desc: "重複を排除して並べ替え" },
-        { cmd: "wc -l file", desc: "ファイルの行数をカウント" },
-
-        // --- 101: プロセス管理・ディスク ---
-        { cmd: "ps aux", desc: "実行中の全プロセスを詳細表示" },
-        { cmd: "top", desc: "リソース使用率をリアルタイム表示（Qで終了）" },
-        { cmd: "kill -9 1234", desc: "プロセスID 1234を強制終了" },
-        { cmd: "jobs", desc: "バックグラウンドジョブの一覧を表示" },
-        { cmd: "df -h", desc: "ディスクの空き容量を人間が読みやすい形式で表示" },
-        { cmd: "du -sh *", desc: "現在のディレクトリ内の容量合計を表示" },
-        { cmd: "fdisk -l", desc: "ディスクパーティション構成を確認" },
-        { cmd: "mount", desc: "マウントされているデバイスを表示" },
-
-        // --- 102: シェル・スクリプト・ネットワーク ---
-        { cmd: "echo $PATH", desc: "コマンドの検索パスを表示" },
-        { cmd: "export VAR=val", desc: "環境変数を設定" },
-        { cmd: "alias ll='ls -l'", desc: "コマンドの別名を設定" },
-        { cmd: "ip addr show", desc: "IPアドレスとネットワークインターフェースを表示" },
-        { cmd: "ip route show", desc: "ルーティングテーブルを表示" },
-        { cmd: "ping -c 4 8.8.8.8", desc: "4回だけ疎通確認を送る" },
-        { cmd: "netstat -tulnp", desc: "待機中のポートとプロセスを確認" },
-        { cmd: "ss -ant", desc: "TCP接続の状態を表示" },
-        { cmd: "dig google.com", desc: "DNSの正引き情報を確認" },
-        { cmd: "ssh -p 22 user@host", desc: "ポートを指定してリモート接続" },
-
-        // --- 102: システムサービス・管理 ---
-        { cmd: "systemctl start httpd", desc: "Webサーバーを起動" },
-        { cmd: "systemctl stop firewalld", desc: "ファイアウォールを停止" },
-        { cmd: "systemctl enable sshd", desc: "SSHの自動起動を有効化" },
-        { cmd: "systemctl status crond", desc: "定期実行サービスの稼働状態を確認" },
-        { cmd: "journalctl -xe", desc: "システムログの末尾からエラー詳細を確認" },
-        { cmd: "crontab -e", desc: "定期実行タスクの編集" },
-        { cmd: "useradd -m -s /bin/bash user", desc: "ログインシェルを指定してユーザー追加" },
-        { cmd: "passwd username", desc: "指定ユーザーのパスワードを変更" },
-        { cmd: "groupadd team-a", desc: "新しいグループを作成" },
-        { cmd: "id root", desc: "ユーザーのUID/GIDを確認" },
-
-        // --- 102: パッケージ管理 ---
-        { cmd: "yum install nginx", desc: "RedHat系でパッケージをインストール" },
-        { cmd: "apt update && apt upgrade", desc: "Debian系で全パッケージを更新" },
-        { cmd: "rpm -qa", desc: "インストール済みのRPMパッケージを全表示" },
-        { cmd: "dpkg -l", desc: "インストール済みのDebianパッケージを一覧表示" },
-        
-        // --- 頻出・重要設定ファイル ---
-        { cmd: "/etc/hostname", desc: "ホスト名を設定するファイル" },
-        { cmd: "/etc/hosts", desc: "IPアドレスとホスト名の対応表" },
-        { cmd: "/etc/resolv.conf", desc: "DNSサーバーの設定ファイル" },
-        { cmd: "/etc/fstab", desc: "ファイルシステムの自動マウント設定" },
-        { cmd: "/etc/shadow", desc: "暗号化されたパスワードが保存されるファイル" },
-        { cmd: "/etc/sudoers", desc: "sudo権限を管理するファイル（visudoで編集）" }
+        { cmd: "ls -la", desc: "隠しファイルを含む詳細表示" },
+        { cmd: "ls -ltr", desc: "古い順に表示" },
+        { cmd: "cp -rp src/ dest/", desc: "属性保持コピー" },
+        { cmd: "rm -rf /tmp/old", desc: "強制ディレクトリ削除" },
+        { cmd: "mkdir -p /a/b/c", desc: "階層ディレクトリ作成" },
+        { cmd: "chmod 755 script", desc: "実行権限付与" },
+        { cmd: "chown root:root file", desc: "所有者変更" },
+        { cmd: "grep -i 'error' file", desc: "大文字小文字無視検索" },
+        { cmd: "systemctl start sshd", desc: "SSH起動" },
+        { cmd: "df -h", desc: "ディスク容量表示" },
+        { cmd: "ip addr show", desc: "IP確認" },
+        { cmd: "tail -f /var/log", desc: "ログリアルタイム監視" },
+        { cmd: "apt update && apt upgrade", desc: "パッケージ更新" },
+        { cmd: "/etc/shadow", desc: "パスワード保存ファイル" }
     ];
 
-    let currentQ = {};
-    let typedIndex = 0;
-    let score = 0;
-    let timeLeft = 60;
-    let gameActive = false;
-    let totalCharsTyped = 0;
-    let missCount = 0;
+    let currentQ, typedIndex, score, timeLeft, gameActive;
+    let penguinPos = 10;
+    let audioCtx = null;
 
-    const targetTextElem = document.getElementById('target-text');
-    const targetDescElem = document.getElementById('target-desc');
-    const penguinElem = document.getElementById('penguin');
-    const scoreElem = document.getElementById('score');
-    const timerElem = document.getElementById('timer');
+    // --- 音声エンジンの初期化 ---
+    function initAudio() {
+        if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    }
+
+    function playSound(freq, type, duration) {
+        if (!audioCtx) return;
+        const osc = audioCtx.createOscillator();
+        const gain = audioCtx.createGain();
+        osc.type = type;
+        osc.frequency.setValueAtTime(freq, audioCtx.currentTime);
+        gain.gain.setValueAtTime(0.1, audioCtx.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + duration);
+        osc.connect(gain);
+        gain.connect(audioCtx.destination);
+        osc.start();
+        osc.stop(audioCtx.currentTime + duration);
+    }
 
     function startGame() {
         document.getElementById('start-screen').style.display = 'none';
         gameActive = true;
         score = 0;
         timeLeft = 60;
-        totalCharsTyped = 0;
-        missCount = 0;
         nextQuestion();
+        gameLoop();
         
-        const timerId = setInterval(() => {
-            if (!gameActive) {
-                clearInterval(timerId);
-                return;
-            }
-            timeLeft--;
-            timerElem.innerText = timeLeft;
-            if (timeLeft <= 0) {
-                clearInterval(timerId);
-                endGame();
-            }
+        setInterval(() => {
+            if(gameActive) timeLeft--;
+            if(timeLeft <= 0) endGame();
         }, 1000);
     }
 
     function nextQuestion() {
-        // ランダムに問題を選択
         currentQ = questions[Math.floor(Math.random() * questions.length)];
         typedIndex = 0;
+        penguinPos = 10; // ペンギンを左に戻す
         updateDisplay();
     }
 
     function updateDisplay() {
         let html = "";
         for (let i = 0; i < currentQ.cmd.length; i++) {
-            if (i < typedIndex) {
-                html += `<span class="correct">${currentQ.cmd[i]}</span>`;
-            } else if (i === typedIndex) {
-                html += `<span class="current-char">${currentQ.cmd[i]}</span>`;
-            } else {
-                html += `<span>${currentQ.cmd[i]}</span>`;
-            }
+            if (i < typedIndex) html += `<span class="correct">${currentQ.cmd[i]}</span>`;
+            else if (i === typedIndex) html += `<span class="current">${currentQ.cmd[i]}</span>`;
+            else html += `<span>${currentQ.cmd[i]}</span>`;
         }
-        targetTextElem.innerHTML = html;
-        targetDescElem.innerText = currentQ.desc;
+        document.getElementById('target-text').innerHTML = html;
+        document.getElementById('target-desc').innerText = currentQ.desc;
+    }
+
+    function gameLoop() {
+        if (!gameActive) return;
+
+        // ペンギンが右へ進む（文字数に応じて速度を調整）
+        const speed = 0.05 + (currentQ.cmd.length * 0.002);
+        penguinPos += speed;
+        document.getElementById('penguin').style.left = penguinPos + "%";
+
+        // 穴に落ちた！
+        if (penguinPos > 85) {
+            playSound(150, 'sawtooth', 0.3); // 落下音
+            penguinPos = 10;
+            score = Math.max(0, score - 50);
+            nextQuestion();
+        }
+
+        requestAnimationFrame(gameLoop);
     }
 
     window.addEventListener('keydown', (e) => {
         if (!gameActive) {
-            if (e.key === 'Enter') {
-                if(document.getElementById('result-screen').style.display === 'flex') {
-                    location.reload();
-                } else {
-                    startGame();
-                }
-            }
+            if (e.key === 'Enter') startGame();
             return;
         }
 
-        // シフトキーなどは無視
         if (e.key.length > 1) return;
 
-        // キー判定
         if (e.key === currentQ.cmd[typedIndex]) {
             typedIndex++;
-            totalCharsTyped++;
-            score += 10;
-            
-            // ペンギンの進捗計算（0%〜85%の間で動かす）
-            // 150文字程度でゴールまで行くような計算
-            let progress = Math.min(85, (totalCharsTyped / 150) * 85);
-            penguinElem.style.left = (5 + progress) + "%";
-            
+            playSound(600, 'sine', 0.05); // 打鍵音
             if (typedIndex >= currentQ.cmd.length) {
-                score += 100; // 文章クリアボーナス
-                nextQuestion();
+                score += 100;
+                playSound(1000, 'sine', 0.1); // クリア音
+                // ペンギンがジャンプする演出
+                document.getElementById('penguin').style.transform = 'translateY(-50px) rotate(360deg)';
+                setTimeout(() => {
+                    document.getElementById('penguin').style.transform = 'translateY(0) rotate(0)';
+                    nextQuestion();
+                }, 200);
             } else {
                 updateDisplay();
             }
         } else {
-            // ミス入力時の演出
-            missCount++;
-            targetTextElem.classList.add('miss');
-            setTimeout(() => targetTextElem.classList.remove('miss'), 100);
+            playSound(200, 'square', 0.1); // ミス音
+            document.body.classList.add('miss-flash');
+            setTimeout(() => document.body.classList.remove('miss-flash'), 100);
         }
-        scoreElem.innerText = score;
     });
 
     function endGame() {
         gameActive = false;
         document.getElementById('result-screen').style.display = 'flex';
-        
-        // 称号の判定
-        let rank = "LPIC 初学者級";
-        if (score > 3000) rank = "スーパー root ユーザー級";
-        else if (score > 2000) rank = "LPI認定エンジニア級";
-        else if (score > 1000) rank = "一般ユーザー級";
-
-        const accuracy = Math.floor((totalCharsTyped / (totalCharsTyped + missCount)) * 100) || 0;
-        
-        document.getElementById('final-stats').innerHTML = `
-            スコア: <span style="color:var(--term-green); font-size: 2.5rem;">${score}</span> 点<br>
-            打鍵数: ${totalCharsTyped} 回 / ミス: ${missCount} 回<br>
-            正確性: ${accuracy} %<br><br>
-            称号: <strong>${rank}</strong>
-        `;
+        document.getElementById('stats').innerHTML = `スコア: ${score}点<br>LPICレベル: ${score > 1500 ? 'root級' : '一般ユーザー級'}`;
     }
 </script>
 </body>

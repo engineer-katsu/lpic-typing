@@ -24,12 +24,20 @@
         #sky { flex: 2; position: relative; background: linear-gradient(to bottom, #2980b9, #6dd5fa); overflow: hidden; }
         #typing-area { flex: 3; display: flex; flex-direction: column; justify-content: center; align-items: center; z-index: 10; }
         
-        /* 坂道をなだらかに設定 */
-        #ground {
+        /* 地面エリアの親（ここにはclip-pathをかけない） */
+        #ground-container {
             flex: 2;
-            background: linear-gradient(160deg, #fff 0%, #dff9fb 100%);
             position: relative;
+            background-color: transparent;
+        }
+
+        /* 地面そのもの（ここだけ切り抜く） */
+        #ground-visual {
+            position: absolute;
+            inset: 0;
+            background: linear-gradient(160deg, #fff 0%, #dff9fb 100%);
             clip-path: polygon(0 40%, 85% 65%, 85% 100%, 0 100%);
+            z-index: 1;
         }
 
         .cloud { position: absolute; background: #fff; width: 100px; height: 40px; border-radius: 50px; opacity: 0.8; animation: moveCloud linear infinite; }
@@ -41,23 +49,24 @@
         .correct { color: var(--term-green); text-shadow: 0 0 10px var(--term-green); }
         .current { border-bottom: 3px solid #fff; }
 
+        /* ペンギンは地面ビジュアルより上に配置 */
         #penguin {
             position: absolute;
-            left: 10%;
-            font-size: 5rem;
+            font-size: 4rem;
             z-index: 20;
-            transform-origin: bottom center; /* ジャンプの起点を足元に */
+            transform: translate(-50%, -100%); /* 足元を基準点にする */
             transition: transform 0.2s ease-out !important;
         }
 
         #pit {
             position: absolute;
             right: 0;
-            bottom: 0;
+            top: 0;
             width: 15%;
             height: 100%;
             background: linear-gradient(to bottom, #000, var(--ocean-blue));
             clip-path: polygon(20% 0, 100% 0, 100% 100%, 0% 100%);
+            z-index: 15;
         }
 
         .overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.85); display: flex; flex-direction: column; justify-content: center; align-items: center; z-index: 100; color: white; }
@@ -87,7 +96,8 @@
         </div>
     </div>
 
-    <div id="ground">
+    <div id="ground-container">
+        <div id="ground-visual"></div>
         <div id="penguin">🐧</div>
         <div id="pit"></div>
     </div>
@@ -127,13 +137,12 @@
     let audioCtx = null;
     let questionStartTime = 0; 
     const FIXED_LIMIT = 10; 
-    const START_POS_X = 10; // 横の開始%
-    const END_POS_X = 75;   // 横の終了%
 
-    // --- 【修正】高さを%で管理（地面のclip-pathの数値に合わせる） ---
-    // clip-pathが top 40% から 65% なので、bottomからは 60% から 35%
-    const START_POS_Y = 55; // 開始時の高さ%
-    const END_POS_Y = 32;   // 終了時の高さ%
+    // スロープの定義（clip-pathの数値と連動）
+    const SLOPE_START_X = 0;
+    const SLOPE_END_X = 85;
+    const SLOPE_START_Y = 40; // 40% from top
+    const SLOPE_END_Y = 65;   // 65% from top
 
     function initAudio() { if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)(); }
 
@@ -197,13 +206,17 @@
         const elapsed = (currentTime - questionStartTime) / 1000;
         const progress = Math.min(elapsed / FIXED_LIMIT, 1);
 
-        // --- 横位置の反映 ---
-        const currentPosX = START_POS_X + ((END_POS_X - START_POS_X) * progress);
-        document.getElementById('penguin').style.left = currentPosX + "%";
+        // 横位置：10%から85%へ
+        const currentPosX = 10 + (75 * progress);
+        
+        // 縦位置：坂道のライン(40%〜65%)を計算
+        // Xの位置に基づいたYの比率を計算
+        const slopeYRange = SLOPE_END_Y - SLOPE_START_Y;
+        const currentPosY = SLOPE_START_Y + (slopeYRange * (currentPosX / SLOPE_END_X));
 
-        // --- 【修正】縦位置を%で反映（これで消えない！） ---
-        const currentPosY = START_POS_Y - (progress * (START_POS_Y - END_POS_Y));
-        document.getElementById('penguin').style.bottom = currentPosY + "%";
+        const p = document.getElementById('penguin');
+        p.style.left = currentPosX + "%";
+        p.style.top = currentPosY + "%";
 
         if (elapsed >= FIXED_LIMIT) {
             playSound(150, 'sawtooth', 0.3);
@@ -225,8 +238,10 @@
                 refreshUI();
                 playSound(1000, 'sine', 0.1);
                 const p = document.getElementById('penguin');
-                p.style.transform = 'translateY(-30px) rotate(360deg)';
-                setTimeout(() => { p.style.transform = 'translateY(0) rotate(0)'; nextQuestion(); }, 200);
+                // ジャンプ演出（transformを一時的に追加）
+                const originalTransform = getComputedStyle(p).transform;
+                p.style.transform = originalTransform + ' translateY(-50px) rotate(360deg)';
+                setTimeout(() => { p.style.transform = originalTransform; nextQuestion(); }, 200);
             } else { updateDisplay(); }
         } else {
             playSound(200, 'square', 0.1);
